@@ -1,6 +1,7 @@
 # coding: utf-8
 from __future__ import absolute_import
 
+import fnmatch
 import os
 import re
 import subprocess
@@ -135,10 +136,15 @@ def create_tree_from_text(text):
 
 
 def create_tree_from_filesystem(base_dir, envs):
-    ignored_dirs = {'.git'}
-    # read ignored files from file.
+    # read ignored dirs and files from file.
     ignored_files_config = os.path.join(base_dir, '.dotignore')
-    ignored_files = []
+    ignore_config = []
+
+    def is_ignored(path):
+        for glob in ignore_config:
+            if fnmatch.fnmatch(path, glob):
+                return True
+        return False
 
     if os.path.isfile(ignored_files_config):
         with open(ignored_files_config) as f:
@@ -146,24 +152,22 @@ def create_tree_from_filesystem(base_dir, envs):
                 file_name = line.rstrip()
                 # we only add non empty files and ignore comments starting with #
                 if file_name and not file_name.startswith('#'):
-                    ignored_files.append(file_name)
-
-    ignored_files = '(' + "|".join(ignored_files) + ')$' #format for regex
-    ignored_files_re = re.compile(ignored_files, re.I)
+                    ignore_config.append(file_name)
 
     base_dir_len = len(base_dir)
     text = u''
     for env in envs:
-        env_path = os.path.join(base_dir, env)
+        if not is_ignored(env):
+            env_path = os.path.join(base_dir, env)
 
-        for root, dirs, files in os.walk(env_path):
-            dirs[:] = [d for d in dirs if d not in ignored_dirs]
-            files[:] = [f for f in files if ignored_files_re.match(f) is None]
+            for root, dirs, files in os.walk(env_path):
+                dirs[:] = [d for d in dirs if not is_ignored(d)]
+                files[:] = [f for f in files if not is_ignored(f)]
 
-            for filename in files:
-                full_path = os.path.join(root, filename).decode('utf-8')
-                text += full_path[base_dir_len + 1:]
-                text += u'\n'
+                for filename in files:
+                    full_path = os.path.join(root, filename).decode('utf-8')
+                    text += full_path[base_dir_len + 1:]
+                    text += u'\n'
 
     return create_tree_from_text(text)
 
