@@ -1,11 +1,25 @@
-# List of files to be ignored, not copied
-# these are case insensitive
+# List of files or directories which will be ignored
+# Each line represents a glob-pattern
+# see: https://docs.python.org/3/library/fnmatch.html#module-fnmatch
+
+# Comments start with # and will be ignored.
+
+# Default
+.git
+README.*
 readme.*
 news
-licence
-license
+LICENCE*
+licence*
+LICENSE*
+license*
+CHANGELOG.*
 changelog.*
 .gitignore
 tags
 .gitmodules
-.*\.sw.
+*.sw*
+
+# Custom
+.idea
+*.iml
